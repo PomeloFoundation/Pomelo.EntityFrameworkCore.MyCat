@@ -4,5 +4,5 @@
 using System.Reflection;
 using System.Resources;
 
-[assembly: AssemblyTitle("Pomelo.EntityFrameworkCore.MySql")]
-[assembly: AssemblyDescription("MySQL provider for Entity Framework Core")]
+[assembly: AssemblyTitle("Pomelo.EntityFrameworkCore.MyCat")]
+[assembly: AssemblyDescription("MyCat provider for Entity Framework Core")]
