@@ -32,7 +32,7 @@ namespace Microsoft.EntityFrameworkCore.Query.Expressions.Internal
         {
             Check.NotNull(visitor, nameof(visitor));
 
-            var specificVisitor = visitor as MySqlQuerySqlGenerator;
+            var specificVisitor = visitor as MyCatQuerySqlGenerator;
 
             return specificVisitor != null
                 ? specificVisitor.VisitAtTimeZone(this)
