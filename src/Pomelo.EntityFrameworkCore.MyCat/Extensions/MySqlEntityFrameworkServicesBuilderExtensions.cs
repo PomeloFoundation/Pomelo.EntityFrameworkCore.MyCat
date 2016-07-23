@@ -28,7 +28,7 @@ namespace Microsoft.Extensions.DependencyInjection
 {
     public static class MySqlEntityFrameworkServicesBuilderExtensions
     {
-        public static IServiceCollection AddEntityFrameworkMySql([NotNull] this IServiceCollection services)
+        public static IServiceCollection AddEntityFrameworkMyCat([NotNull] this IServiceCollection services)
         {
             Check.NotNull(services, nameof(services));
 
