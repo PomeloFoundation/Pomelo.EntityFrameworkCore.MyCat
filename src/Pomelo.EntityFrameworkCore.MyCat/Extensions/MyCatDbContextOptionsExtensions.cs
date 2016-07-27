@@ -16,18 +16,24 @@ namespace Microsoft.EntityFrameworkCore
     public static class MyCatDbContextOptionsExtensions
     {
         public static DbContextOptionsBuilder UseMyCat(
-            [NotNull] this DbContextOptionsBuilder optionsBuilder,
-            [NotNull] string connectionString,
-            [CanBeNull] Action<MyCatDbContextOptionsBuilder> MyCatOptionsAction = null)
+                    [NotNull] this DbContextOptionsBuilder optionsBuilder,
+                    [NotNull] string connectionString,
+                    [CanBeNull] Action<MyCatDbContextOptionsBuilder> MySqlOptionsAction = null)
         {
             Check.NotNull(optionsBuilder, nameof(optionsBuilder));
             Check.NotEmpty(connectionString, nameof(connectionString));
+
+            var csb = new MySqlConnectionStringBuilder(connectionString)
+            {
+                AllowUserVariables = true
+            };
+            connectionString = csb.ConnectionString;
 
             var extension = GetOrCreateExtension(optionsBuilder);
             extension.ConnectionString = connectionString;
             ((IDbContextOptionsBuilderInfrastructure)optionsBuilder).AddOrUpdateExtension(extension);
 
-            MyCatOptionsAction?.Invoke(new MyCatDbContextOptionsBuilder(optionsBuilder));
+            MySqlOptionsAction?.Invoke(new MyCatDbContextOptionsBuilder(optionsBuilder));
 
             return optionsBuilder;
         }
@@ -35,16 +41,22 @@ namespace Microsoft.EntityFrameworkCore
         public static DbContextOptionsBuilder UseMyCat(
             [NotNull] this DbContextOptionsBuilder optionsBuilder,
             [NotNull] DbConnection connection,
-            [CanBeNull] Action<MyCatDbContextOptionsBuilder> MyCatOptionsAction = null)
+            [CanBeNull] Action<MyCatDbContextOptionsBuilder> MySqlOptionsAction = null)
         {
             Check.NotNull(optionsBuilder, nameof(optionsBuilder));
             Check.NotNull(connection, nameof(connection));
 
+            var csb = new MySqlConnectionStringBuilder(connection.ConnectionString)
+            {
+                AllowUserVariables = true
+            };
+
+            connection.ConnectionString = csb.ConnectionString;
             var extension = GetOrCreateExtension(optionsBuilder);
             extension.Connection = connection;
             ((IDbContextOptionsBuilderInfrastructure)optionsBuilder).AddOrUpdateExtension(extension);
 
-            MyCatOptionsAction?.Invoke(new MyCatDbContextOptionsBuilder(optionsBuilder));
+            MySqlOptionsAction?.Invoke(new MyCatDbContextOptionsBuilder(optionsBuilder));
 
             return optionsBuilder;
         }
