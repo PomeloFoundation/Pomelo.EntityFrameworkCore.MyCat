@@ -309,7 +309,7 @@ namespace Microsoft.EntityFrameworkCore.Update.Internal
                     {
                         try
                         {
-                            var prop = tableModification.GetType().GetTypeInfo().GetField("_columnModifications");
+                            var prop = tableModification.GetType().GetField("_columnModifications");
                             var cm = (IReadOnlyList<ColumnModification>)prop.GetValue(tableModification);
                             var entries = cm.Where(x => x.IsKey);
                             foreach (var x in entries)
