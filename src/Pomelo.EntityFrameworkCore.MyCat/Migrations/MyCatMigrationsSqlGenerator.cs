@@ -56,16 +56,13 @@ namespace Microsoft.EntityFrameworkCore.Migrations
             var identifier = SqlGenerationHelper.DelimitIdentifier(operation.Table, operation.Schema);
             var alterBase = $"ALTER TABLE {identifier} DROP COLUMN {SqlGenerationHelper.DelimitIdentifier(operation.Name)}";
             builder.Append(alterBase).Append(SqlGenerationHelper.StatementTerminator);
+            EndStatement(builder);
         }
 
         protected override void Generate(AlterColumnOperation operation, IModel model, MigrationCommandListBuilder builder)
         {
             Check.NotNull(operation, nameof(operation));
             Check.NotNull(builder, nameof(builder));
-
-            // TODO: There is probably duplication here with other methods. See ColumnDefinition.
-
-            //TODO: this should provide feature parity with the EF6 provider, check if there's anything missing for EF7
 
             var type = operation.ColumnType;
             if (operation.ColumnType == null)
@@ -133,8 +130,10 @@ namespace Microsoft.EntityFrameworkCore.Migrations
             }
             else
             {
-                builder.Append(" DROP DEFAULT ");
+                builder.Append(" DROP DEFAULT;");
             }
+
+            EndStatement(builder);
         }
 
         protected override void Generate(CreateSequenceOperation operation, IModel model, MigrationCommandListBuilder builder)
@@ -233,7 +232,7 @@ namespace Microsoft.EntityFrameworkCore.Migrations
             Check.NotNull(builder, nameof(builder));
 
             builder
-                .AppendLine($"CREATE OR REPLACE FUNCTION MyCat_ef_ensure_schema() RETURNS VOID")
+                .AppendLine($"CREATE OR REPLACE FUNCTION mysql_ef_ensure_schema() RETURNS VOID")
                 .AppendLine($"BEGIN")
                 .AppendLine($"    IF NOT EXISTS(SELECT 1 FROM `information_schema`.`SCHEMATA` where  `SCHEMA_NAME` = '{ operation.Name }')")
                 .AppendLine($"    THEN")
@@ -415,7 +414,6 @@ BEGIN
 	DECLARE PRIMARY_KEY_COLUMN_NAME VARCHAR(255);
 	DECLARE PRIMARY_KEY_TYPE VARCHAR(255);
 	DECLARE SQL_EXP VARCHAR(1000);
-
 	SELECT COUNT(*) 
 		INTO HAS_AUTO_INCREMENT_ID 
 		FROM `information_schema`.`COLUMNS`
@@ -470,7 +468,6 @@ BEGIN
 	DECLARE PRIMARY_KEY_COLUMN_NAME VARCHAR(255);
 	DECLARE PRIMARY_KEY_TYPE VARCHAR(255);
 	DECLARE SQL_EXP VARCHAR(1000);
-
 	SELECT COUNT(*) 
 		INTO HAS_AUTO_INCREMENT_ID 
 		FROM `information_schema`.`COLUMNS`
@@ -511,7 +508,8 @@ END;");
             builder
                 .Append("ALTER TABLE ")
                 .Append(SqlGenerationHelper.DelimitIdentifier(operation.Table, operation.Schema))
-                .Append(" DROP PRIMARY KEY");
+                .Append(" DROP PRIMARY KEY;")
+                .AppendLine();
 
             EndStatement(builder);
         }
