@@ -7,6 +7,7 @@
 
   "packOptions": {
     "authors": [ "Amamiya Yuuko" ],
+    "tags": [ "Entity Framework Core", "MySQL", "MyCat", "Cluster", "MySQL Cluster", "Cobar", "ORM", "Data" ],
     "description": "Pomelo.EntityFrameworkCore.MyCat is an Entity Framework Core provider and optimized for MyCat (An open source MySQL cluster proxy which based on Cobar)",
     "projectUrl": "https://github.com/PomeloFoundation/Pomelo.EntityFrameworkCore.MyCat",
     "iconUrl": "http://www.1234.sh/assets/Shared/pomelofoundation.png",
