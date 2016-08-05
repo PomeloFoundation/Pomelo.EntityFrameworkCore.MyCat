@@ -3,6 +3,7 @@
 
 using System;
 using System.Linq;
+using System.Reflection;
 using System.Collections.Generic;
 using JetBrains.Annotations;
 using Microsoft.EntityFrameworkCore.Infrastructure;
@@ -121,7 +122,6 @@ namespace Microsoft.EntityFrameworkCore.Migrations
                     case "char(38)":
                     case "uuid":
                     case "uniqueidentifier":
-                        builder.Append("UUID()");
                         break;
                     default:
                         throw new NotImplementedException($"Not supporting creating IsIdentity for {type}");
@@ -319,9 +319,11 @@ namespace Microsoft.EntityFrameworkCore.Migrations
                 type = TypeMapper.FindMapping(property).StoreType;
             }
 
-            var valueGeneration = annotatable[MyCatAnnotationNames.Prefix + MyCatAnnotationNames.ValueGeneratedOnAdd];
-            var generatedOnAdd = valueGeneration != null && (bool)valueGeneration;
-            if (generatedOnAdd)
+            var generatedOnAddAnnotation = annotatable[MyCatAnnotationNames.Prefix + MyCatAnnotationNames.ValueGeneratedOnAdd];
+            var generatedOnAdd = generatedOnAddAnnotation != null && (bool)generatedOnAddAnnotation;
+            var generatedOnAddOrUpdateAnnotation = annotatable[MyCatAnnotationNames.Prefix + MyCatAnnotationNames.ValueGeneratedOnAddOrUpdate];
+            var generatedOnAddOrUpdate = generatedOnAddOrUpdateAnnotation != null && (bool)generatedOnAddOrUpdateAnnotation;
+            if (generatedOnAdd && string.IsNullOrWhiteSpace(defaultValueSql) && defaultValue == null)
             {
                 switch (type)
                 {
@@ -337,26 +339,57 @@ namespace Microsoft.EntityFrameworkCore.Migrations
                     case "int2":
                         type = "short AUTO_INCREMENT";
                         break;
-                    case "varchar": // Allow string identifier
+                    case "datetime":
+                    case "timestamp":
+                        defaultValueSql = "CURRENT_TIMESTAMP";
                         break;
-                    case "char(38)": // GUID identifier
-                        break;
-                    default:
-                        if (type.IndexOf("varchar") >= 0)
-                            break;
-                        throw new InvalidOperationException($"Column {name} of type {type} can't be Identity");
+
                 }
             }
 
-            if (defaultValue != null)
+            string onUpdateSql = null;
+
+            if (generatedOnAddOrUpdate)
             {
-                if (type == "longtext")
+                switch (type)
                 {
-                    defaultValue = null;
+                    case "datetime":
+                    case "timestamp":
+                        if (string.IsNullOrWhiteSpace(defaultValueSql) && defaultValue == null)
+                            defaultValueSql = "CURRENT_TIMESTAMP";
+                        onUpdateSql = "CURRENT_TIMESTAMP";
+                        break;
                 }
             }
 
-            base.ColumnDefinition(schema, table, name, clrType, type, unicode, maxLength, rowVersion, nullable, defaultValue, defaultValueSql, computedColumnSql, annotatable, model, builder);
+            builder
+                .Append(SqlGenerationHelper.DelimitIdentifier(name))
+                .Append(" ")
+                .Append(type ?? GetColumnType(schema, table, name, clrType, unicode, maxLength, rowVersion, model));
+
+            if (!nullable)
+            {
+                builder.Append(" NOT NULL");
+            }
+
+            if (defaultValueSql != null)
+            {
+                builder
+                    .Append(" DEFAULT ")
+                    .Append(defaultValueSql);
+            }
+            else if (defaultValue != null)
+            {
+                builder
+                    .Append(" DEFAULT ")
+                    .Append(SqlGenerationHelper.GenerateLiteral(defaultValue));
+            }
+            if (onUpdateSql != null)
+            {
+                builder
+                    .Append(" ON UPDATE ")
+                    .Append(onUpdateSql);
+            }
         }
 
         protected override void DefaultValue(object defaultValue, string defaultValueSql, MigrationCommandListBuilder builder)
@@ -414,6 +447,7 @@ BEGIN
 	DECLARE PRIMARY_KEY_COLUMN_NAME VARCHAR(255);
 	DECLARE PRIMARY_KEY_TYPE VARCHAR(255);
 	DECLARE SQL_EXP VARCHAR(1000);
+
 	SELECT COUNT(*) 
 		INTO HAS_AUTO_INCREMENT_ID 
 		FROM `information_schema`.`COLUMNS`
@@ -468,6 +502,7 @@ BEGIN
 	DECLARE PRIMARY_KEY_COLUMN_NAME VARCHAR(255);
 	DECLARE PRIMARY_KEY_TYPE VARCHAR(255);
 	DECLARE SQL_EXP VARCHAR(1000);
+
 	SELECT COUNT(*) 
 		INTO HAS_AUTO_INCREMENT_ID 
 		FROM `information_schema`.`COLUMNS`

@@ -7,7 +7,7 @@ using System.Threading.Tasks;
 using System.Linq;
 using System.Reflection;
 using Microsoft.EntityFrameworkCore.Storage;
-using Pomelo.Data.MySql;
+using Pomelo.Data.MyCat;
 
 namespace Microsoft.EntityFrameworkCore.Update.Internal
 {
@@ -43,11 +43,11 @@ namespace Microsoft.EntityFrameworkCore.Update.Internal
                     {
                         lock (this)
                         {
-                            var reader = (connection.DbConnection as MySqlConnection).Reader.LastOrDefault();
+                            var reader = (connection.DbConnection as MyCatConnection).Reader.LastOrDefault();
                             if (reader != null)
                             {
                                 reader.Dispose();
-                                (connection.DbConnection as MySqlConnection).Reader.Remove(reader);
+                                (connection.DbConnection as MyCatConnection).Reader.Remove(reader);
                             }
                         }
                     }
@@ -95,11 +95,11 @@ namespace Microsoft.EntityFrameworkCore.Update.Internal
                     {
                         lock(this)
                         {
-                            var reader = (connection.DbConnection as MySqlConnection).Reader.LastOrDefault();
+                            var reader = (connection.DbConnection as MyCatConnection).Reader.LastOrDefault();
                             if (reader != null)
                             {
                                 reader.Dispose();
-                                (connection.DbConnection as MySqlConnection).Reader.Remove(reader);
+                                (connection.DbConnection as MyCatConnection).Reader.Remove(reader);
                             }
                         }
                     }

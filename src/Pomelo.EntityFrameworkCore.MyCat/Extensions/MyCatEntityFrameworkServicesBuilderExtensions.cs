@@ -50,6 +50,7 @@ namespace Microsoft.Extensions.DependencyInjection
                 .AddScoped<TableNameFromDbSetConvention>()
                 .AddScoped<IMyCatUpdateSqlGenerator, MyCatUpdateSqlGenerator>()
                 .AddScoped<MyCatModificationCommandBatchFactory>()
+                .AddScoped<MyCatValueGeneratorSelector>()
                 .AddScoped<MyCatDatabaseProviderServices>()
                 .AddScoped<MyCatRelationalConnection>()
                 .AddScoped<MyCatDatabaseCreator>()

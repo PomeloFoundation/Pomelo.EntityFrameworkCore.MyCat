@@ -52,5 +52,6 @@ namespace Microsoft.EntityFrameworkCore.Storage.Internal
         public override IMemberTranslator CompositeMemberTranslator => GetService<MyCatCompositeMemberTranslator>();
         public override IQueryCompilationContextFactory QueryCompilationContextFactory => GetService<MyCatQueryCompilationContextFactory>();
         public override IQuerySqlGeneratorFactory QuerySqlGeneratorFactory => GetService<MyCatQuerySqlGenerationHelperFactory>();
+        public override IValueGeneratorSelector ValueGeneratorSelector => GetService<MyCatValueGeneratorSelector>();
     }
 }

@@ -15,7 +15,7 @@ using Microsoft.EntityFrameworkCore.Storage.Internal;
 using JetBrains.Annotations;
 using Microsoft.EntityFrameworkCore.Metadata;
 using Microsoft.EntityFrameworkCore.Utilities;
-using Pomelo.Data.MySql;
+using Pomelo.Data.MyCat;
 
 
 // ReSharper disable once CheckNamespace
@@ -37,14 +37,14 @@ namespace Microsoft.EntityFrameworkCore.Storage.Internal
         private readonly RelationalTypeMapping _json = new RelationalTypeMapping("json", typeof(JsonObject<>), DbType.String);
 
         private readonly RelationalTypeMapping _rowversion = new RelationalTypeMapping("TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP", typeof(byte[]), DbType.Binary);
-        private readonly MyCatMaxLengthMapping _nchar = new MyCatMaxLengthMapping("nchar", typeof(string), DbType.StringFixedLength);
-        private readonly MyCatMaxLengthMapping _nvarchar = new MyCatMaxLengthMapping("nvarchar", typeof(string));
+        private readonly MyCatMaxLengthMapping _nchar = new MyCatMaxLengthMapping("varchar", typeof(string), DbType.StringFixedLength);
+        private readonly MyCatMaxLengthMapping _nvarchar = new MyCatMaxLengthMapping("varchar", typeof(string));
         private readonly RelationalTypeMapping _varcharmax = new MyCatMaxLengthMapping("longtext", typeof(string), DbType.AnsiString);
 
         private readonly MyCatMaxLengthMapping _varchar = new MyCatMaxLengthMapping("varchar", typeof(string), DbType.AnsiString);
         private readonly MyCatMaxLengthMapping _varchar255 = new MyCatMaxLengthMapping("varchar(255)", typeof(string), DbType.AnsiString);
         private readonly RelationalTypeMapping _varbinary = new RelationalTypeMapping("varbinary", typeof(byte[]), DbType.Binary);
-        private readonly MyCatMaxLengthMapping _varbinary255 = new MyCatMaxLengthMapping("varbinary(255)", typeof(byte[]), DbType.Binary);
+        private readonly MyCatMaxLengthMapping _varbinary767 = new MyCatMaxLengthMapping("varbinary(767)", typeof(byte[]), DbType.Binary);
         private readonly RelationalTypeMapping _varbinarymax = new RelationalTypeMapping("longblob", typeof(byte[]), DbType.Binary);
 
 
@@ -125,8 +125,8 @@ namespace Microsoft.EntityFrameworkCore.Storage.Internal
                 = new ByteArrayRelationalTypeMapper(
                     8000,
                     _varbinarymax,
-                    _varbinarymax,
-                    _varbinary255,
+                    _varbinary767,
+                    _varbinary767,
                     _rowversion, size => new MyCatMaxLengthMapping(
                         "varbinary(" + size + ")",
                         typeof(byte[]),
@@ -138,9 +138,9 @@ namespace Microsoft.EntityFrameworkCore.Storage.Internal
 
             StringMapper
                 = new StringRelationalTypeMapper(
-                    767,
+                    8000,
                     _varcharmax,
-                    _varcharmax,
+                    _varchar255,
                     _varchar255,
                     size => new MyCatMaxLengthMapping(
                         "varchar(" + size + ")",
@@ -150,9 +150,9 @@ namespace Microsoft.EntityFrameworkCore.Storage.Internal
                         size: size,
                         hasNonDefaultUnicode: true,
                         hasNonDefaultSize: true),
-                    767,
+                    8000,
                     _varcharmax,
-                    _varcharmax,
+                    _varchar255,
                     _varchar255,
                     size => new MyCatMaxLengthMapping(
                         "varchar(" + size + ")",

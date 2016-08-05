@@ -10,16 +10,16 @@ using System.Text;
 using System.Threading.Tasks;
 using JetBrains.Annotations;
 using Microsoft.EntityFrameworkCore.Storage;
-using Pomelo.Data.MySql;
+using Pomelo.Data.MyCat;
 
 
 namespace Microsoft.EntityFrameworkCore.Storage.Internal
 {
     public class MyCatTypeMapping : RelationalTypeMapping
     {
-        public new MySqlDbType? StoreType { get; }
+        public new MyCatDbType? StoreType { get; }
 
-        internal MyCatTypeMapping([NotNull] string defaultTypeName, [NotNull] Type clrType, MySqlDbType storeType)
+        internal MyCatTypeMapping([NotNull] string defaultTypeName, [NotNull] Type clrType, MyCatDbType storeType)
             : base(defaultTypeName, clrType)
         {
             StoreType = storeType;
@@ -34,7 +34,7 @@ namespace Microsoft.EntityFrameworkCore.Storage.Internal
         {
             if (StoreType.HasValue)
             {
-                ((MySqlParameter) parameter).MySqlDbType = StoreType.Value;
+                ((MyCatParameter) parameter).MyCatDbType = StoreType.Value;
             }
         }
     }

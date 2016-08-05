@@ -7,7 +7,7 @@ using JetBrains.Annotations;
 using Microsoft.EntityFrameworkCore.Infrastructure;
 using Microsoft.EntityFrameworkCore.Internal;
 using Microsoft.EntityFrameworkCore.Utilities;
-using Pomelo.Data.MySql;
+using Pomelo.Data.MyCat;
 
 // ReSharper disable once CheckNamespace
 
@@ -16,14 +16,14 @@ namespace Microsoft.EntityFrameworkCore
     public static class MyCatDbContextOptionsExtensions
     {
         public static DbContextOptionsBuilder UseMyCat(
-                    [NotNull] this DbContextOptionsBuilder optionsBuilder,
-                    [NotNull] string connectionString,
-                    [CanBeNull] Action<MyCatDbContextOptionsBuilder> MySqlOptionsAction = null)
+            [NotNull] this DbContextOptionsBuilder optionsBuilder,
+            [NotNull] string connectionString,
+            [CanBeNull] Action<MyCatDbContextOptionsBuilder> MyCatOptionsAction = null)
         {
             Check.NotNull(optionsBuilder, nameof(optionsBuilder));
             Check.NotEmpty(connectionString, nameof(connectionString));
 
-            var csb = new MySqlConnectionStringBuilder(connectionString)
+            var csb = new MyCatConnectionStringBuilder(connectionString)
             {
                 AllowUserVariables = true
             };
@@ -33,7 +33,7 @@ namespace Microsoft.EntityFrameworkCore
             extension.ConnectionString = connectionString;
             ((IDbContextOptionsBuilderInfrastructure)optionsBuilder).AddOrUpdateExtension(extension);
 
-            MySqlOptionsAction?.Invoke(new MyCatDbContextOptionsBuilder(optionsBuilder));
+            MyCatOptionsAction?.Invoke(new MyCatDbContextOptionsBuilder(optionsBuilder));
 
             return optionsBuilder;
         }
@@ -41,12 +41,12 @@ namespace Microsoft.EntityFrameworkCore
         public static DbContextOptionsBuilder UseMyCat(
             [NotNull] this DbContextOptionsBuilder optionsBuilder,
             [NotNull] DbConnection connection,
-            [CanBeNull] Action<MyCatDbContextOptionsBuilder> MySqlOptionsAction = null)
+            [CanBeNull] Action<MyCatDbContextOptionsBuilder> MyCatOptionsAction = null)
         {
             Check.NotNull(optionsBuilder, nameof(optionsBuilder));
             Check.NotNull(connection, nameof(connection));
 
-            var csb = new MySqlConnectionStringBuilder(connection.ConnectionString)
+            var csb = new MyCatConnectionStringBuilder(connection.ConnectionString)
             {
                 AllowUserVariables = true
             };
@@ -56,7 +56,7 @@ namespace Microsoft.EntityFrameworkCore
             extension.Connection = connection;
             ((IDbContextOptionsBuilderInfrastructure)optionsBuilder).AddOrUpdateExtension(extension);
 
-            MySqlOptionsAction?.Invoke(new MyCatDbContextOptionsBuilder(optionsBuilder));
+            MyCatOptionsAction?.Invoke(new MyCatDbContextOptionsBuilder(optionsBuilder));
 
             return optionsBuilder;
         }
@@ -68,7 +68,7 @@ namespace Microsoft.EntityFrameworkCore
             where TContext : DbContext
         {
             return (DbContextOptionsBuilder<TContext>)UseMyCat(
-                (DbContextOptionsBuilder)optionsBuilder, new MySqlConnection(connectionString), MyCatOptionsAction);
+                (DbContextOptionsBuilder)optionsBuilder, new MyCatConnection(connectionString), MyCatOptionsAction);
         }
 
         public static DbContextOptionsBuilder<TContext> UseMyCat<TContext>(

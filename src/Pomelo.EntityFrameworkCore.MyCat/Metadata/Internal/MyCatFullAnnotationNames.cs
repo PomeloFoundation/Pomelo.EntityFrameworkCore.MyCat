@@ -17,6 +17,7 @@ namespace Microsoft.EntityFrameworkCore.Metadata.Internal
             MyCatExtensionPrefix = prefix + MyCatAnnotationNames.MyCatExtensionPrefix;
             DatabaseTemplate = prefix + MyCatAnnotationNames.DatabaseTemplate;
             ValueGeneratedOnAdd = prefix + MyCatAnnotationNames.ValueGeneratedOnAdd;
+            ValueGeneratedOnAddOrUpdate = prefix + MyCatAnnotationNames.ValueGeneratedOnAddOrUpdate;
         }
 
         public new static MyCatFullAnnotationNames Instance { get; } = new MyCatFullAnnotationNames(MyCatAnnotationNames.Prefix);
@@ -30,5 +31,6 @@ namespace Microsoft.EntityFrameworkCore.Metadata.Internal
         public readonly string MyCatExtensionPrefix;
         public readonly string DatabaseTemplate;
         public readonly string ValueGeneratedOnAdd;
+        public readonly string ValueGeneratedOnAddOrUpdate;
     }
 }

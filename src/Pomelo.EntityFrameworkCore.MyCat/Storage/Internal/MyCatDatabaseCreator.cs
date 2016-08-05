@@ -10,7 +10,7 @@ using Microsoft.EntityFrameworkCore.Metadata;
 using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Migrations.Operations;
 using Microsoft.EntityFrameworkCore.Utilities;
-using Pomelo.Data.MySql;
+using Pomelo.Data.MyCat;
 
 namespace Microsoft.EntityFrameworkCore.Storage.Internal
 {
@@ -122,7 +122,7 @@ namespace Microsoft.EntityFrameworkCore.Storage.Internal
                     _connection.Close();
                     return true;
                 }
-                catch (MySqlException e)
+                catch (MyCatException e)
                 {
                     if (!retryOnNotExists
                         && IsDoesNotExist(e))
@@ -157,7 +157,7 @@ namespace Microsoft.EntityFrameworkCore.Storage.Internal
                     _connection.Close();
                     return true;
                 }
-                catch (MySqlException e)
+                catch (MyCatException e)
                 {
                     if (!retryOnNotExists
                         && IsDoesNotExist(e))
@@ -174,10 +174,10 @@ namespace Microsoft.EntityFrameworkCore.Storage.Internal
         }
 
         // Login failed is thrown when database does not exist (See Issue #776)
-        private static bool IsDoesNotExist(MySqlException exception) => exception.Number == 1049;
+        private static bool IsDoesNotExist(MyCatException exception) => exception.Number == 1049;
 
         // See Issue #985
-        private bool RetryOnExistsFailure(MySqlException exception, ref int retryCount)
+        private bool RetryOnExistsFailure(MyCatException exception, ref int retryCount)
         {
             if (exception.Number == 1049 && ++retryCount < 30)
             {
@@ -232,10 +232,10 @@ namespace Microsoft.EntityFrameworkCore.Storage.Internal
         }
 
         // Clear connection pools in case there are active connections that are pooled
-        private static void ClearAllPools() => MySqlConnection.ClearAllPools();
+        private static void ClearAllPools() => MyCatConnection.ClearAllPools();
 
         // Clear connection pool for the database connection since after the 'create database' call, a previously
         // invalid connection may now be valid.
-        private void ClearPool() => MySqlConnection.ClearPool((MySqlConnection)_connection.DbConnection);
+        private void ClearPool() => MyCatConnection.ClearPool((MyCatConnection)_connection.DbConnection);
     }
 }
