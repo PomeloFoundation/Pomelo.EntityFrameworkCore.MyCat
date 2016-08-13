@@ -134,91 +134,61 @@ namespace Microsoft.EntityFrameworkCore.Update.Internal
             return stringBuilder.ToString();
         }
 
-        protected override void UpdateCachedCommandText(int commandPosition)
+        protected override int ConsumeResultSetWithoutPropagation(int commandIndex, [NotNull] DbDataReader reader)
         {
-            var newModificationCommand = ModificationCommands[commandPosition];
-
-            if (newModificationCommand.EntityState == EntityState.Added)
+            var expectedRowsAffected = 1;
+            while ((++commandIndex < CommandResultSet.Count)
+                   && CommandResultSet[commandIndex - 1] == ResultSetMapping.NotLastInResultSet)
             {
-                if ((_bulkInsertCommands.Count > 0)
-                    && !CanBeInsertedInSameStatement(_bulkInsertCommands[0], newModificationCommand))
-                {
-                    CachedCommandText.Append(GetBulkInsertCommandText(commandPosition));
-                    _bulkInsertCommands.Clear();
-                }
-                _bulkInsertCommands.Add(newModificationCommand);
+                Debug.Assert(!ModificationCommands[commandIndex].RequiresResultPropagation);
 
-                LastCachedCommandIndex = commandPosition;
+                expectedRowsAffected++;
             }
-            else
-            {
-                CachedCommandText.Append(GetBulkInsertCommandText(commandPosition));
-                _bulkInsertCommands.Clear();
 
-                base.UpdateCachedCommandText(commandPosition);
-            }
+            return commandIndex;
         }
 
-        private static bool CanBeInsertedInSameStatement(ModificationCommand firstCommand, ModificationCommand secondCommand)
-            => string.Equals(firstCommand.TableName, secondCommand.TableName, StringComparison.Ordinal)
-               && string.Equals(firstCommand.Schema, secondCommand.Schema, StringComparison.Ordinal)
-               && firstCommand.ColumnModifications.Where(o => o.IsWrite).Select(o => o.ColumnName).SequenceEqual(
-                   secondCommand.ColumnModifications.Where(o => o.IsWrite).Select(o => o.ColumnName))
-               && firstCommand.ColumnModifications.Where(o => o.IsRead).Select(o => o.ColumnName).SequenceEqual(
-                   secondCommand.ColumnModifications.Where(o => o.IsRead).Select(o => o.ColumnName));
-
-        /*protected override void Consume(DbDataReader reader)
+        protected override Task<int> ConsumeResultSetWithoutPropagationAsync(
+            int commandIndex, [NotNull] DbDataReader reader, CancellationToken cancellationToken)
         {
-            var MyCatReader = (MyCatDataReader)reader;
-            Debug.Assert(MyCatReader.Statements.Count == ModificationCommands.Count, $"Reader has {MyCatReader.Statements.Count} statements, expected {ModificationCommands.Count}");
+            var expectedRowsAffected = 1;
+            while ((++commandIndex < CommandResultSet.Count)
+                   && CommandResultSet[commandIndex - 1] == ResultSetMapping.NotLastInResultSet)
+            {
+                Debug.Assert(!ModificationCommands[commandIndex].RequiresResultPropagation);
+
+                expectedRowsAffected++;
+            }
+
+            return Task.FromResult(commandIndex);
+        }
+
+        protected override void Consume(DbDataReader reader)
+        {
+            Debug.Assert(CommandResultSet.Count == ModificationCommands.Count);
             var commandIndex = 0;
 
             try
             {
-                while (true)
+                var actualResultSetCount = 0;
+                do
                 {
-                    // Find the next propagating command, if any
-                    int nextPropagating;
-                    for (nextPropagating = commandIndex;
-                        nextPropagating < ModificationCommands.Count &&
-                        !ModificationCommands[nextPropagating].RequiresResultPropagation;
-                        nextPropagating++) ;
-
-                    // Go over all non-propagating commands before the next propagating one,
-                    // make sure they executed
-                    for (; commandIndex < nextPropagating; commandIndex++)
+                    while (commandIndex < CommandResultSet.Count
+                           && CommandResultSet[commandIndex] == ResultSetMapping.NoResultSet)
                     {
-                        if (MyCatReader.Statements[commandIndex].Rows == 0)
-                        {
-                            throw new DbUpdateConcurrencyException(
-                                RelationalStrings.UpdateConcurrencyException(1, 0),
-                                ModificationCommands[commandIndex].Entries
-                            );
-                        }
+                        commandIndex++;
                     }
 
-                    if (nextPropagating == ModificationCommands.Count)
+                    if (commandIndex < CommandResultSet.Count)
                     {
-                        Debug.Assert(!reader.NextResult(), "Expected less resultsets");
-                        break;
+                        commandIndex = ModificationCommands[commandIndex].RequiresResultPropagation
+                            ? ConsumeResultSetWithPropagation(commandIndex, reader)
+                            : ConsumeResultSetWithoutPropagation(commandIndex, reader);
+                        actualResultSetCount++;
                     }
-
-                    // Propagate to results from the reader to the ModificationCommand
-
-                    var modificationCommand = ModificationCommands[commandIndex++];
-
-                    if (!reader.Read())
-                    {
-                        throw new DbUpdateConcurrencyException(
-                            RelationalStrings.UpdateConcurrencyException(1, 0),
-                            modificationCommand.Entries);
-                    }
-
-                    var valueBufferFactory = CreateValueBufferFactory(modificationCommand.ColumnModifications);
-                    modificationCommand.PropagateResults(valueBufferFactory.Create(reader));
-
-                    reader.NextResult();
                 }
+                while (commandIndex < CommandResultSet.Count
+                       && reader.NextResult());
             }
             catch (DbUpdateException)
             {
@@ -231,76 +201,6 @@ namespace Microsoft.EntityFrameworkCore.Update.Internal
                     ex,
                     ModificationCommands[commandIndex].Entries);
             }
-        }*/
-
-        /*protected override async Task ConsumeAsync(
-            DbDataReader reader,
-            CancellationToken cancellationToken = default(CancellationToken))
-        {
-            var MyCatReader = (MyCatDataReader)reader;
-            Debug.Assert(MyCatReader.Statements.Count == ModificationCommands.Count, $"Reader has {MyCatReader.Statements.Count} statements, expected {ModificationCommands.Count}");
-            var commandIndex = 0;
-
-            try
-            {
-                while (true)
-                {
-                    // Find the next propagating command, if any
-                    int nextPropagating;
-                    for (nextPropagating = commandIndex;
-                        nextPropagating < ModificationCommands.Count &&
-                        !ModificationCommands[nextPropagating].RequiresResultPropagation;
-                        nextPropagating++)
-                        ;
-
-                    // Go over all non-propagating commands before the next propagating one,
-                    // make sure they executed
-                    for (; commandIndex < nextPropagating; commandIndex++)
-                    {
-                        if (MyCatReader.Statements[commandIndex].Rows == 0)
-                        {
-                            throw new DbUpdateConcurrencyException(
-                                RelationalStrings.UpdateConcurrencyException(1, 0),
-                                ModificationCommands[commandIndex].Entries
-                            );
-                        }
-                    }
-
-                    if (nextPropagating == ModificationCommands.Count)
-                    {
-                        Debug.Assert(!(await reader.NextResultAsync(cancellationToken)), "Expected less resultsets");
-                        break;
-                    }
-
-                    // Extract result from the command and propagate it
-
-                    var modificationCommand = ModificationCommands[commandIndex++];
-
-                    if (!(await reader.ReadAsync(cancellationToken)))
-                    {
-                        throw new DbUpdateConcurrencyException(
-                            RelationalStrings.UpdateConcurrencyException(1, 0),
-                            modificationCommand.Entries
-                        );
-                    }
-
-                    var valueBufferFactory = CreateValueBufferFactory(modificationCommand.ColumnModifications);
-                    modificationCommand.PropagateResults(valueBufferFactory.Create(reader));
-
-                    await reader.NextResultAsync(cancellationToken);
-                }
-            }
-            catch (DbUpdateException)
-            {
-                throw;
-            }
-            catch (Exception ex)
-            {
-                throw new DbUpdateException(
-                    RelationalStrings.UpdateStoreException,
-                    ex,
-                    ModificationCommands[commandIndex].Entries);
-            }
-        }*/
+        }
     }
 }
