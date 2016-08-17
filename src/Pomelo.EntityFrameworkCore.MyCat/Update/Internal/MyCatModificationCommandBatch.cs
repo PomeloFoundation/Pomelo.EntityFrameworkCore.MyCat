@@ -142,7 +142,11 @@ namespace Microsoft.EntityFrameworkCore.Update.Internal
             {
                 Debug.Assert(!ModificationCommands[commandIndex].RequiresResultPropagation);
 
-                expectedRowsAffected++;
+                if (expectedRowsAffected != reader.RecordsAffected)
+                    throw new DbUpdateConcurrencyException(
+                        RelationalStrings.UpdateConcurrencyException(1, 0),
+                        ModificationCommands[commandIndex].Entries
+                    );
             }
 
             return commandIndex;
@@ -157,7 +161,11 @@ namespace Microsoft.EntityFrameworkCore.Update.Internal
             {
                 Debug.Assert(!ModificationCommands[commandIndex].RequiresResultPropagation);
 
-                expectedRowsAffected++;
+                if (expectedRowsAffected != reader.RecordsAffected)
+                    throw new DbUpdateConcurrencyException(
+                        RelationalStrings.UpdateConcurrencyException(1, 0),
+                        ModificationCommands[commandIndex].Entries
+                    );
             }
 
             return Task.FromResult(commandIndex);
