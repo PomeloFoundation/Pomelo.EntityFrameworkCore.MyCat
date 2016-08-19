@@ -61,7 +61,9 @@ namespace Microsoft.Extensions.DependencyInjection
 
             services
                 .AddScoped<IChangeDetector, MyCatChangeDetector>()
-                .AddScoped<IPropertyListener, IChangeDetector>(p => p.GetService<IChangeDetector>());
+                .AddScoped<IPropertyListener, IChangeDetector>(p => p.GetService<IChangeDetector>())
+                .AddScoped<MyCatMigrationsModelDiffer>()
+                .AddScoped<IMigrationsModelDiffer, MyCatMigrationsModelDiffer>();
 
             return services;
         }
