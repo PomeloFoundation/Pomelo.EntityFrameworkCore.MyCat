@@ -31,13 +31,46 @@ namespace Microsoft.EntityFrameworkCore.Storage.Internal
         // Issue #774
         protected override DbConnection CreateDbConnection() => new MyCatConnection(ConnectionString);
 
-        public MyCatRelationalConnection CreateMasterConnection()
+        public MyCatRelationalConnection CreateNodeConnection(MyCatDatabaseHost node)
+        {
+            var csb = new MyCatConnectionStringBuilder(ConnectionString)
+            {
+                Database = node.Database,
+                UserID = node.Username,
+                Server = node.Host,
+                Port = node.Port,
+                Password = node.Password,
+                Pooling = false
+            };
+
+            var optionsBuilder = new DbContextOptionsBuilder();
+            optionsBuilder.UseMyCat(csb.GetConnectionString(true));
+            return new MyCatRelationalConnection(optionsBuilder.Options, Logger);
+        }
+
+        public MyCatRelationalConnection CreateMasterConnection(MyCatDatabaseHost node)
         {
             var csb = new MyCatConnectionStringBuilder(ConnectionString) {
                 Database = "mysql",
+                UserID = node.Username,
+                Server = node.Host,
+                Port = node.Port,
+                Password = node.Password,
                 Pooling = false
             };
-            
+            var optionsBuilder = new DbContextOptionsBuilder();
+            optionsBuilder.UseMyCat(csb.GetConnectionString(true));
+            return new MyCatRelationalConnection(optionsBuilder.Options, Logger);
+        }
+
+        public MyCatRelationalConnection CreateMasterConnection()
+        {
+            var csb = new MyCatConnectionStringBuilder(ConnectionString)
+            {
+                Database = "mysql",
+                Pooling = false
+            };
+
             var optionsBuilder = new DbContextOptionsBuilder();
             optionsBuilder.UseMyCat(csb.GetConnectionString(true));
             return new MyCatRelationalConnection(optionsBuilder.Options, Logger);

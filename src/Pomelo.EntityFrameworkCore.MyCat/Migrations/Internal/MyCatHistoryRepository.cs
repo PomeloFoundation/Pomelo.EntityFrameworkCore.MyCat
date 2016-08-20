@@ -13,6 +13,9 @@ using Microsoft.EntityFrameworkCore.Storage.Internal;
 using Microsoft.EntityFrameworkCore.Internal;
 using Microsoft.EntityFrameworkCore.Metadata.Conventions;
 using Microsoft.EntityFrameworkCore.Metadata.Builders;
+using System.Threading;
+using System.Threading.Tasks;
+using System.Collections.Generic;
 
 // ReSharper disable once CheckNamespace
 namespace Microsoft.EntityFrameworkCore.Migrations.Internal
@@ -20,7 +23,9 @@ namespace Microsoft.EntityFrameworkCore.Migrations.Internal
     public class MyCatHistoryRepository : HistoryRepository
     {
 
-        private MyCatRelationalConnection _connection;
+        private readonly MyCatRelationalConnection _connection;
+        private readonly MyCatDatabaseCreator _databaseCreator;
+        private readonly IRawSqlCommandBuilder _rawSqlCommandBuilder;
 
         public MyCatHistoryRepository(
             [NotNull] IDatabaseCreator databaseCreator,
@@ -42,6 +47,22 @@ namespace Microsoft.EntityFrameworkCore.Migrations.Internal
                   SqlGenerationHelper)
         {
             _connection = connection;
+            _databaseCreator = (MyCatDatabaseCreator)databaseCreator;
+            _rawSqlCommandBuilder = sqlCommandBuilder;
+        }
+
+        public bool Exists(MyCatRelationalConnection conn)
+        {
+           return _databaseCreator.Exists(conn)
+           && InterpretExistsResult(
+               _rawSqlCommandBuilder.Build(ExistsSql).ExecuteScalar(conn));
+        }
+
+        public async Task<bool> ExistsAsync(MyCatRelationalConnection conn, CancellationToken cancellationToken = default(CancellationToken))
+        {
+            return await _databaseCreator.ExistsAsync(conn, cancellationToken)
+          && InterpretExistsResult(
+              await _rawSqlCommandBuilder.Build(ExistsSql).ExecuteScalarAsync(conn, cancellationToken: cancellationToken));
         }
 
         protected override void ConfigureTable([NotNull] EntityTypeBuilder<HistoryRow> history)
@@ -90,6 +111,48 @@ namespace Microsoft.EntityFrameworkCore.Migrations.Internal
         public override string GetEndIfScript()
         {
             throw new NotSupportedException("Generating idempotent scripts for migration is not currently supported by MyCat");
+        }
+
+        public IReadOnlyList<HistoryRow> GetAppliedMigrations(MyCatRelationalConnection connection)
+        {
+            var rows = new List<HistoryRow>();
+
+            if (Exists(connection))
+            {
+                var command = _rawSqlCommandBuilder.Build(GetAppliedMigrationsSql);
+
+                using (var reader = command.ExecuteReader(connection))
+                {
+                    while (reader.DbDataReader.Read())
+                    {
+                        rows.Add(new HistoryRow(reader.DbDataReader.GetString(0), reader.DbDataReader.GetString(1)));
+                    }
+                }
+            }
+
+            return rows;
+        }
+
+        public async Task<IReadOnlyList<HistoryRow>> GetAppliedMigrationsAsync(
+            MyCatRelationalConnection connection,
+            CancellationToken cancellationToken = default(CancellationToken))
+        {
+            var rows = new List<HistoryRow>();
+
+            if (await ExistsAsync(connection, cancellationToken))
+            {
+                var command = _rawSqlCommandBuilder.Build(GetAppliedMigrationsSql);
+
+                using (var reader = await command.ExecuteReaderAsync(connection, cancellationToken: cancellationToken))
+                {
+                    while (await reader.DbDataReader.ReadAsync(cancellationToken))
+                    {
+                        rows.Add(new HistoryRow(reader.DbDataReader.GetString(0), reader.DbDataReader.GetString(1)));
+                    }
+                }
+            }
+
+            return rows;
         }
     }
 }

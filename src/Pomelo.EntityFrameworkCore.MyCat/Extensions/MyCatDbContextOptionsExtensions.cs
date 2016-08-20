@@ -5,6 +5,7 @@ using System;
 using System.Data.Common;
 using JetBrains.Annotations;
 using Microsoft.EntityFrameworkCore.Infrastructure;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Internal;
 using Microsoft.EntityFrameworkCore.Utilities;
 using Pomelo.Data.MyCat;
@@ -15,6 +16,21 @@ namespace Microsoft.EntityFrameworkCore
 {
     public static class MyCatDbContextOptionsExtensions
     {
+        public static DbContextOptionsBuilder UseDataNode(
+            [NotNull] this DbContextOptionsBuilder optionsBuilder,
+            [NotNull] Action<MyCatDataNode> BuildDn)
+        {
+            Check.NotNull(optionsBuilder, nameof(optionsBuilder));
+
+            var extension = GetOrCreateExtension(optionsBuilder);
+            var dn = new MyCatDataNode();
+            BuildDn?.Invoke(dn);
+            extension.DataNodes.Add(dn);
+            ((IDbContextOptionsBuilderInfrastructure)optionsBuilder).AddOrUpdateExtension(extension);
+            
+            return optionsBuilder;
+        }
+
         public static DbContextOptionsBuilder UseMyCat(
             [NotNull] this DbContextOptionsBuilder optionsBuilder,
             [NotNull] string connectionString,
@@ -79,11 +95,11 @@ namespace Microsoft.EntityFrameworkCore
             => (DbContextOptionsBuilder<TContext>)UseMyCat(
                 (DbContextOptionsBuilder)optionsBuilder, connection, MyCatOptionsAction);
 
-        private static MyCatOptionsExtension GetOrCreateExtension(DbContextOptionsBuilder optionsBuilder)
+        public static MyCatOptionsExtension GetOrCreateExtension(DbContextOptionsBuilder optionsBuilder)
         {
             var existing = optionsBuilder.Options.FindExtension<MyCatOptionsExtension>();
             return existing != null
-                ? new MyCatOptionsExtension(existing)
+                ? existing
                 : new MyCatOptionsExtension();
         }
     }

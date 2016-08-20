@@ -1,4 +1,4 @@
-﻿{
+{
   "version": "1.0.0-*",
 
   "buildOptions": {
@@ -47,13 +47,15 @@
         "System.Runtime": {
           "version": "4.0.10.0",
           "type": "build"
-        }
+        },
+        "System.Net.Http": "4.0.0.0"
       }
     },
     "netstandard1.3": {
       "dependencies": {
         "System.Threading.Thread": "4.0.0",
-        "System.Reflection.TypeExtensions": "4.1.0"
+        "System.Reflection.TypeExtensions": "4.1.0",
+        "System.Net.Http": "4.1.0"
       }
     }
   }

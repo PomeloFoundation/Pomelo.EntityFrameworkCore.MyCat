@@ -7,6 +7,10 @@ Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "src", "src", "{92FD385D-01F
 EndProject
 Project("{8BB2217D-0F2D-49D1-97BC-3654ED321F3B}") = "Pomelo.EntityFrameworkCore.MyCat", "src\Pomelo.EntityFrameworkCore.MyCat\Pomelo.EntityFrameworkCore.MyCat.xproj", "{9436189C-B863-481F-BC83-E275619E4AF6}"
 EndProject
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "sample", "sample", "{E96A1CF2-9C55-48E9-940B-91ABC30B635E}"
+EndProject
+Project("{8BB2217D-0F2D-49D1-97BC-3654ED321F3B}") = "MyCatSample", "sample\MyCatSample\MyCatSample.xproj", "{CC9D6A40-3522-498B-AB6D-522455CED6EA}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -17,11 +21,16 @@ Global
 		{9436189C-B863-481F-BC83-E275619E4AF6}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{9436189C-B863-481F-BC83-E275619E4AF6}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{9436189C-B863-481F-BC83-E275619E4AF6}.Release|Any CPU.Build.0 = Release|Any CPU
+		{CC9D6A40-3522-498B-AB6D-522455CED6EA}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{CC9D6A40-3522-498B-AB6D-522455CED6EA}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{CC9D6A40-3522-498B-AB6D-522455CED6EA}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{CC9D6A40-3522-498B-AB6D-522455CED6EA}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
 	EndGlobalSection
 	GlobalSection(NestedProjects) = preSolution
 		{9436189C-B863-481F-BC83-E275619E4AF6} = {92FD385D-01F3-4429-80D9-E87E1F8BA259}
+		{CC9D6A40-3522-498B-AB6D-522455CED6EA} = {E96A1CF2-9C55-48E9-940B-91ABC30B635E}
 	EndGlobalSection
 EndGlobal

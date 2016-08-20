@@ -1,0 +1,382 @@
+﻿// Copyright (c) .NET Foundation. All rights reserved.
+// Licensed under the Apache License, Version 2.0. See License.txt in the project root for license information.
+
+using System;
+using System.Collections.Generic;
+using System.Linq;
+using System.Reflection;
+using System.Threading;
+using System.Threading.Tasks;
+using System.Data.Common;
+using JetBrains.Annotations;
+using Microsoft.EntityFrameworkCore.Internal;
+using Microsoft.EntityFrameworkCore.Infrastructure;
+using Microsoft.EntityFrameworkCore.Storage;
+using Microsoft.EntityFrameworkCore.Storage.Internal;
+using Microsoft.EntityFrameworkCore.Utilities;
+using Microsoft.Extensions.Logging;
+using Pomelo.Data.MySql;
+
+namespace Microsoft.EntityFrameworkCore.Migrations.Internal
+{
+    /// <summary>
+    ///     This API supports the Entity Framework Core infrastructure and is not intended to be used 
+    ///     directly from your code. This API may change or be removed in future releases.
+    /// </summary>
+    public class MyCatMigrator : Migrator
+    {
+        private readonly IMigrationsAssembly _migrationsAssembly;
+        private readonly MyCatHistoryRepository _historyRepository;
+        private readonly MyCatDatabaseCreator _databaseCreator;
+        private readonly IMigrationsSqlGenerator _migrationsSqlGenerator;
+        private readonly IRawSqlCommandBuilder _rawSqlCommandBuilder;
+        private readonly IMigrationCommandExecutor _migrationCommandExecutor;
+        private readonly MyCatRelationalConnection _connection;
+        private readonly ISqlGenerationHelper _sqlGenerationHelper;
+        private readonly ILogger _logger;
+        private readonly string _activeProvider;
+        private readonly IDbContextOptions _options;
+
+        /// <summary>
+        ///     This API supports the Entity Framework Core infrastructure and is not intended to be used 
+        ///     directly from your code. This API may change or be removed in future releases.
+        /// </summary>
+        public MyCatMigrator(
+            [NotNull] IMigrationsAssembly migrationsAssembly,
+            [NotNull] IHistoryRepository historyRepository,
+            [NotNull] IDatabaseCreator databaseCreator,
+            [NotNull] IMigrationsSqlGenerator migrationsSqlGenerator,
+            [NotNull] IRawSqlCommandBuilder rawSqlCommandBuilder,
+            [NotNull] IMigrationCommandExecutor migrationCommandExecutor,
+            [NotNull] IRelationalConnection connection,
+            [NotNull] ISqlGenerationHelper sqlGenerationHelper,
+            [NotNull] ILogger<Migrator> logger,
+            [NotNull] IDatabaseProviderServices providerServices,
+            [NotNull] IDbContextOptions options)
+            : base(migrationsAssembly, historyRepository, databaseCreator, migrationsSqlGenerator, rawSqlCommandBuilder, migrationCommandExecutor, connection, sqlGenerationHelper, logger, providerServices)
+        {
+            Check.NotNull(migrationsAssembly, nameof(migrationsAssembly));
+            Check.NotNull(historyRepository, nameof(historyRepository));
+            Check.NotNull(databaseCreator, nameof(databaseCreator));
+            Check.NotNull(migrationsSqlGenerator, nameof(migrationsSqlGenerator));
+            Check.NotNull(rawSqlCommandBuilder, nameof(rawSqlCommandBuilder));
+            Check.NotNull(migrationCommandExecutor, nameof(migrationCommandExecutor));
+            Check.NotNull(connection, nameof(connection));
+            Check.NotNull(sqlGenerationHelper, nameof(sqlGenerationHelper));
+            Check.NotNull(logger, nameof(logger));
+            Check.NotNull(providerServices, nameof(providerServices));
+
+            _migrationsAssembly = migrationsAssembly;
+            _historyRepository = (MyCatHistoryRepository)historyRepository;
+            _databaseCreator = (MyCatDatabaseCreator)databaseCreator;
+            _migrationsSqlGenerator = migrationsSqlGenerator;
+            _rawSqlCommandBuilder = rawSqlCommandBuilder;
+            _migrationCommandExecutor = migrationCommandExecutor;
+            _connection = (MyCatRelationalConnection)connection;
+            _sqlGenerationHelper = sqlGenerationHelper;
+            _logger = logger;
+            _activeProvider = providerServices.InvariantName;
+            _options = options;
+        }
+
+        /// <summary>
+        ///     This API supports the Entity Framework Core infrastructure and is not intended to be used 
+        ///     directly from your code. This API may change or be removed in future releases.
+        /// </summary>
+        public override void Migrate(string targetMigration = null)
+        {
+            // Get data node connections
+            var ext = _options.FindExtension<MyCatOptionsExtension>();
+            foreach (var x in ext.DataNodes)
+            {
+                Migrate(x.Master, targetMigration);
+                if (x.Slave != null)
+                    Migrate(x.Slave, targetMigration);
+            }
+        }
+
+        private void Migrate(MyCatDatabaseHost node, string targetMigration = null)
+        {
+            var connection = _connection.CreateNodeConnection(node);
+            _logger.LogDebug(RelationalStrings.UsingConnection(connection.DbConnection.Database, connection.DbConnection.DataSource));
+
+            if (!_historyRepository.Exists(connection))
+            {
+                if (!_databaseCreator.Exists(connection))
+                {
+                    _databaseCreator.Create(node);
+                }
+
+                var command = _rawSqlCommandBuilder.Build(_historyRepository.GetCreateScript());
+
+                command.ExecuteNonQuery(connection);
+            }
+
+            var commandLists = GetMigrationCommandLists(_historyRepository.GetAppliedMigrations(connection), targetMigration);
+            foreach (var commandList in commandLists)
+            {
+                _migrationCommandExecutor.ExecuteNonQuery(commandList(), connection);
+            }
+            connection.Close();
+            connection.Dispose();
+        }
+
+        /// <summary>
+        ///     This API supports the Entity Framework Core infrastructure and is not intended to be used 
+        ///     directly from your code. This API may change or be removed in future releases.
+        /// </summary>
+        public override async Task MigrateAsync(
+            string targetMigration = null,
+            CancellationToken cancellationToken = default(CancellationToken))
+        {
+            var ext = _options.FindExtension<MyCatOptionsExtension>();
+            foreach (var x in ext.DataNodes)
+            {
+                
+                await MigrateAsync(x.Master, targetMigration, cancellationToken);
+                if (x.Slave != null)
+                    await MigrateAsync(x.Slave, targetMigration, cancellationToken);
+            }
+        }
+
+        private async Task MigrateAsync(
+            MyCatDatabaseHost node,
+            string targetMigration = null,
+            CancellationToken cancellationToken = default(CancellationToken))
+        {
+            var connection = _connection.CreateNodeConnection(node);
+            _logger.LogDebug(RelationalStrings.UsingConnection(connection.DbConnection.Database, connection.DbConnection.DataSource));
+
+            if (!await _historyRepository.ExistsAsync(connection, cancellationToken))
+            {
+                if (!await _databaseCreator.ExistsAsync(connection, cancellationToken))
+                {
+                    await _databaseCreator.CreateAsync(node, cancellationToken);
+                }
+
+                var command = _rawSqlCommandBuilder.Build(_historyRepository.GetCreateScript());
+
+                await command.ExecuteNonQueryAsync(connection, cancellationToken: cancellationToken);
+            }
+
+            var commandLists = GetMigrationCommandLists(
+                await _historyRepository.GetAppliedMigrationsAsync(connection, cancellationToken),
+                targetMigration);
+
+            foreach (var commandList in commandLists)
+            {
+                await _migrationCommandExecutor.ExecuteNonQueryAsync(commandList(), connection, cancellationToken);
+            }
+        }
+
+        private IEnumerable<Func<IReadOnlyList<MigrationCommand>>> GetMigrationCommandLists(
+            IReadOnlyList<HistoryRow> appliedMigrationEntries,
+            string targetMigration = null)
+        {
+            IReadOnlyList<Migration> migrationsToApply, migrationsToRevert;
+            PopulateMigrations(
+                appliedMigrationEntries.Select(t => t.MigrationId),
+                targetMigration,
+                out migrationsToApply,
+                out migrationsToRevert);
+
+            for (var i = 0; i < migrationsToRevert.Count; i++)
+            {
+                var migration = migrationsToRevert[i];
+
+                var index = i;
+                yield return () =>
+                {
+                    _logger.LogInformation(RelationalStrings.RevertingMigration(migration.GetId()));
+
+                    return GenerateDownSql(
+                        migration,
+                        index != migrationsToRevert.Count - 1
+                            ? migrationsToRevert[index + 1]
+                            : null);
+                };
+            }
+
+            foreach (var migration in migrationsToApply)
+            {
+                yield return () =>
+                {
+                    _logger.LogInformation(RelationalStrings.ApplyingMigration(migration.GetId()));
+
+                    return GenerateUpSql(migration);
+                };
+            }
+        }
+
+        private void PopulateMigrations(
+            IEnumerable<string> appliedMigrationEntries,
+            string targetMigration,
+            out IReadOnlyList<Migration> migrationsToApply,
+            out IReadOnlyList<Migration> migrationsToRevert)
+        {
+            var appliedMigrations = new Dictionary<string, TypeInfo>();
+            var unappliedMigrations = new Dictionary<string, TypeInfo>();
+            var appliedMigrationEntrySet = new HashSet<string>(appliedMigrationEntries, StringComparer.OrdinalIgnoreCase);
+            foreach (var migration in _migrationsAssembly.Migrations)
+            {
+                if (appliedMigrationEntrySet.Contains(migration.Key))
+                {
+                    appliedMigrations.Add(migration.Key, migration.Value);
+                }
+                else
+                {
+                    unappliedMigrations.Add(migration.Key, migration.Value);
+                }
+            }
+            if (string.IsNullOrEmpty(targetMigration))
+            {
+                migrationsToApply = unappliedMigrations
+                    .Select(p => _migrationsAssembly.CreateMigration(p.Value, _activeProvider))
+                    .ToList();
+                migrationsToRevert = new Migration[0];
+            }
+            else if (targetMigration == Migration.InitialDatabase)
+            {
+                migrationsToApply = new Migration[0];
+                migrationsToRevert = appliedMigrations
+                    .OrderByDescending(m => m.Key)
+                    .Select(p => _migrationsAssembly.CreateMigration(p.Value, _activeProvider))
+                    .ToList();
+            }
+            else
+            {
+                targetMigration = _migrationsAssembly.GetMigrationId(targetMigration);
+                migrationsToApply = unappliedMigrations
+                    .Where(m => string.Compare(m.Key, targetMigration, StringComparison.OrdinalIgnoreCase) <= 0)
+                    .Select(p => _migrationsAssembly.CreateMigration(p.Value, _activeProvider))
+                    .ToList();
+                migrationsToRevert = appliedMigrations
+                    .Where(m => string.Compare(m.Key, targetMigration, StringComparison.OrdinalIgnoreCase) > 0)
+                    .OrderByDescending(m => m.Key)
+                    .Select(p => _migrationsAssembly.CreateMigration(p.Value, _activeProvider))
+                    .ToList();
+            }
+        }
+
+        /// <summary>
+        ///     This API supports the Entity Framework Core infrastructure and is not intended to be used 
+        ///     directly from your code. This API may change or be removed in future releases.
+        /// </summary>
+        public override string GenerateScript(
+            string fromMigration = null,
+            string toMigration = null,
+            bool idempotent = false)
+        {
+            var skippedMigrations = _migrationsAssembly.Migrations
+                .Where(t => string.Compare(t.Key, fromMigration, StringComparison.OrdinalIgnoreCase) < 0)
+                .Select(t => t.Key);
+
+            IReadOnlyList<Migration> migrationsToApply, migrationsToRevert;
+            PopulateMigrations(
+                skippedMigrations,
+                toMigration,
+                out migrationsToApply,
+                out migrationsToRevert);
+
+            var builder = new IndentedStringBuilder();
+
+            if (fromMigration == Migration.InitialDatabase
+                || string.IsNullOrEmpty(fromMigration))
+            {
+                builder.AppendLine(_historyRepository.GetCreateIfNotExistsScript());
+                builder.Append(_sqlGenerationHelper.BatchTerminator);
+            }
+
+            for (var i = 0; i < migrationsToRevert.Count; i++)
+            {
+                var migration = migrationsToRevert[i];
+                var previousMigration = i != migrationsToRevert.Count - 1
+                    ? migrationsToRevert[i + 1]
+                    : null;
+
+                _logger.LogDebug(RelationalStrings.GeneratingDown(migration.GetId()));
+
+                foreach (var command in GenerateDownSql(migration, previousMigration))
+                {
+                    if (idempotent)
+                    {
+                        builder.AppendLine(_historyRepository.GetBeginIfExistsScript(migration.GetId()));
+                        using (builder.Indent())
+                        {
+                            builder.AppendLines(command.CommandText);
+                        }
+                        builder.AppendLine(_historyRepository.GetEndIfScript());
+                    }
+                    else
+                    {
+                        builder.AppendLine(command.CommandText);
+                    }
+
+                    builder.Append(_sqlGenerationHelper.BatchTerminator);
+                }
+            }
+
+            foreach (var migration in migrationsToApply)
+            {
+                _logger.LogDebug(RelationalStrings.GeneratingUp(migration.GetId()));
+
+                foreach (var command in GenerateUpSql(migration))
+                {
+                    if (idempotent)
+                    {
+                        builder.AppendLine(_historyRepository.GetBeginIfNotExistsScript(migration.GetId()));
+                        using (builder.Indent())
+                        {
+                            builder.AppendLines(command.CommandText);
+                        }
+                        builder.AppendLine(_historyRepository.GetEndIfScript());
+                    }
+                    else
+                    {
+                        builder.AppendLine(command.CommandText);
+                    }
+
+                    builder.Append(_sqlGenerationHelper.BatchTerminator);
+                }
+            }
+
+            return builder.ToString();
+        }
+
+        /// <summary>
+        ///     This API supports the Entity Framework Core infrastructure and is not intended to be used 
+        ///     directly from your code. This API may change or be removed in future releases.
+        /// </summary>
+        protected override IReadOnlyList<MigrationCommand> GenerateUpSql([NotNull] Migration migration)
+        {
+            Check.NotNull(migration, nameof(migration));
+
+            var insertCommand = _rawSqlCommandBuilder.Build(
+                _historyRepository.GetInsertScript(new HistoryRow(migration.GetId(), ProductInfo.GetVersion())));
+
+            return _migrationsSqlGenerator
+                .Generate(migration.UpOperations, migration.TargetModel)
+                .Concat(new[] { new MigrationCommand(insertCommand) })
+                .ToList();
+        }
+
+        /// <summary>
+        ///     This API supports the Entity Framework Core infrastructure and is not intended to be used 
+        ///     directly from your code. This API may change or be removed in future releases.
+        /// </summary>
+        protected override IReadOnlyList<MigrationCommand> GenerateDownSql(
+            [NotNull] Migration migration,
+            [CanBeNull] Migration previousMigration)
+        {
+            Check.NotNull(migration, nameof(migration));
+
+            var deleteCommand = _rawSqlCommandBuilder.Build(
+                _historyRepository.GetDeleteScript(migration.GetId()));
+
+            return _migrationsSqlGenerator
+                .Generate(migration.DownOperations, previousMigration?.TargetModel)
+                .Concat(new[] { new MigrationCommand(deleteCommand) })
+                .ToList();
+        }
+    }
+}

@@ -55,6 +55,7 @@ namespace Microsoft.Extensions.DependencyInjection
                 .AddScoped<MyCatRelationalConnection>()
                 .AddScoped<MyCatDatabaseCreator>()
                 .AddScoped<MyCatHistoryRepository>()
+                .AddScoped<MyCatSchemaGenerator>()
                 .AddScoped<MyCatMigrationsSqlGenerationHelper>()
                 .AddScoped<MyCatModificationCommandBatchFactory>()
                 .AddQuery());
@@ -63,7 +64,8 @@ namespace Microsoft.Extensions.DependencyInjection
                 .AddScoped<IChangeDetector, MyCatChangeDetector>()
                 .AddScoped<IPropertyListener, IChangeDetector>(p => p.GetService<IChangeDetector>())
                 .AddScoped<MyCatMigrationsModelDiffer>()
-                .AddScoped<IMigrationsModelDiffer, MyCatMigrationsModelDiffer>();
+                .AddScoped<IMigrationsModelDiffer, MyCatMigrationsModelDiffer>()
+                .AddScoped<IMigrator, MyCatMigrator>();
 
             return services;
         }
