@@ -29,14 +29,14 @@ namespace MyCatSample
             base.OnConfiguring(optionsBuilder);
 
             optionsBuilder
-                .UseMyCat("server=localhost;port=8066;uid=test;pwd=test;database=blog")
+                .UseMyCat("server=192.168.0.102;port=8066;uid=root;pwd=19931101;database=blog")
                 .UseDataNode(x =>
                 {
-                    x.Master = new MyCatDatabaseHost { Host = "localhost", Database = "mycatblog", Username = "root", Password = "19931101" };
+                    x.Master = new MyCatDatabaseHost { Host = "192.168.0.102", Database = "mycatblog", Username = "root", Password = "19931101" };
                 })
                 .UseDataNode(x =>
                 {
-                    x.Master = new MyCatDatabaseHost { Host = "localhost", Database = "mycatblog2", Username = "root", Password = "19931101" };
+                    x.Master = new MyCatDatabaseHost { Host = "192.168.0.102", Database = "mycatblog2", Username = "root", Password = "19931101" };
                 });
         }
     }

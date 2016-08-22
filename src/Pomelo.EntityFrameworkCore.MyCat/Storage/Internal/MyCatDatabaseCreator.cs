@@ -163,7 +163,7 @@ namespace Microsoft.EntityFrameworkCore.Storage.Internal
                     continue;
                 }
 
-                if (!HasTables())
+                if (!HasTables(_connection.CreateNodeConnection(x.Master)))
                 {
                     CreateTables(x.Master);
                     continue;
@@ -178,7 +178,7 @@ namespace Microsoft.EntityFrameworkCore.Storage.Internal
                         continue;
                     }
 
-                    if (!HasTables())
+                    if (!HasTables(_connection.CreateNodeConnection(x.Slave)))
                     {
                         CreateTables(x.Slave);
                         continue;
@@ -225,6 +225,9 @@ namespace Microsoft.EntityFrameworkCore.Storage.Internal
         protected override bool HasTables()
             => (long)CreateHasTablesCommand().ExecuteScalar(_connection) != 0;
 
+        protected bool HasTables(MyCatRelationalConnection conn)
+            => (long)CreateHasTablesCommand(conn).ExecuteScalar(conn) != 0;
+
         /// <summary>
         ///     This API supports the Entity Framework Core infrastructure and is not intended to be used
         ///     directly from your code. This API may change or be removed in future releases.
@@ -232,12 +235,22 @@ namespace Microsoft.EntityFrameworkCore.Storage.Internal
         protected override async Task<bool> HasTablesAsync(CancellationToken cancellationToken = default(CancellationToken))
             => (long)await CreateHasTablesCommand().ExecuteScalarAsync(_connection, cancellationToken: cancellationToken) != 0;
 
+        protected async Task<bool> HasTablesAsync(MyCatRelationalConnection conn ,CancellationToken cancellationToken = default(CancellationToken))
+            => (long)await CreateHasTablesCommand(conn).ExecuteScalarAsync(conn, cancellationToken: cancellationToken) != 0;
+
         public IRelationalCommand CreateHasTablesCommand()
             => _rawSqlCommandBuilder
                 .Build(@"
                     SELECT CASE WHEN COUNT(*) = 0 THEN FALSE ELSE TRUE END
                     FROM information_schema.tables
                     WHERE table_type = 'BASE TABLE' AND table_schema = '" + _connection.DbConnection.Database + "'");
+
+        public IRelationalCommand CreateHasTablesCommand(MyCatRelationalConnection conn)
+            => _rawSqlCommandBuilder
+                .Build(@"
+                    SELECT CASE WHEN COUNT(*) = 0 THEN FALSE ELSE TRUE END
+                    FROM information_schema.tables
+                    WHERE table_type = 'BASE TABLE' AND table_schema = '" + conn.DbConnection.Database + "'");
 
         public IReadOnlyList<MigrationCommand> CreateCreateOperations(MyCatDatabaseHost node)
             => _migrationsSqlGenerator.Generate(new[] { new MyCatCreateDatabaseOperation { Name = node.Database } });
