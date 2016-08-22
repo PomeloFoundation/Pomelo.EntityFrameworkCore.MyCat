@@ -18,16 +18,70 @@ namespace Microsoft.EntityFrameworkCore
     {
         public static DbContextOptionsBuilder UseDataNode(
             [NotNull] this DbContextOptionsBuilder optionsBuilder,
-            [NotNull] Action<MyCatDataNode> BuildDn)
+            [NotNull] string Server,
+            [NotNull] string Database,
+            [NotNull] string UserId,
+            [NotNull] string Password,
+            uint Port = 3306)
         {
             Check.NotNull(optionsBuilder, nameof(optionsBuilder));
 
             var extension = GetOrCreateExtension(optionsBuilder);
-            var dn = new MyCatDataNode();
-            BuildDn?.Invoke(dn);
+            var dn = new MyCatDataNode
+            {
+                Master = new MyCatDatabaseHost
+                {
+                    Host = Server,
+                    Database = Database,
+                    Password = Password,
+                    Username = UserId,
+                    Port = Port
+                }
+            };
             extension.DataNodes.Add(dn);
             ((IDbContextOptionsBuilderInfrastructure)optionsBuilder).AddOrUpdateExtension(extension);
             
+            return optionsBuilder;
+        }
+
+        public static DbContextOptionsBuilder UseDataNode(
+            [NotNull] this DbContextOptionsBuilder optionsBuilder,
+            [NotNull] string MasterServer,
+            [NotNull] string MasterDatabase,
+            [NotNull] string MasterUserId,
+            [NotNull] string MasterPassword,
+            [NotNull] string SlaveServer,
+            [NotNull] string SlaveDatabase,
+            [NotNull] string SlaveUserId,
+            [NotNull] string SlavePassword,
+            uint MasterPort = 3306,
+            uint SlavePort = 3306)
+        {
+            Check.NotNull(optionsBuilder, nameof(optionsBuilder));
+
+            var extension = GetOrCreateExtension(optionsBuilder);
+            var dn = new MyCatDataNode
+            {
+                Master = new MyCatDatabaseHost
+                {
+                    Host = MasterServer,
+                    Database = MasterDatabase,
+                    Password = MasterPassword,
+                    Username = MasterUserId,
+                    Port = MasterPort
+                },
+                Slave = new MyCatDatabaseHost
+                {
+                    Host = SlaveServer,
+                    Database = SlaveDatabase,
+                    Password = SlavePassword,
+                    Username = SlaveUserId,
+                    Port = SlavePort
+                }
+            };
+            extension.DataNodes.Add(dn);
+            ((IDbContextOptionsBuilderInfrastructure)optionsBuilder).AddOrUpdateExtension(extension);
+
             return optionsBuilder;
         }
 

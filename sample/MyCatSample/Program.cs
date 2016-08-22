@@ -1,12 +1,11 @@
 ﻿using System;
+using System.Linq;
 using System.ComponentModel.DataAnnotations.Schema;
 using System.Collections.Generic;
 using Microsoft.EntityFrameworkCore;
 
 namespace MyCatSample
 {
-    [DataNode("dn0, dn1")]
-    [Table("xxxx")]
     public class Blog
     {
         public long Id { get; set; }
@@ -29,15 +28,9 @@ namespace MyCatSample
             base.OnConfiguring(optionsBuilder);
 
             optionsBuilder
-                .UseMyCat("server=192.168.0.102;port=8066;uid=root;pwd=19931101;database=blog")
-                .UseDataNode(x =>
-                {
-                    x.Master = new MyCatDatabaseHost { Host = "192.168.0.102", Database = "mycatblog", Username = "root", Password = "19931101" };
-                })
-                .UseDataNode(x =>
-                {
-                    x.Master = new MyCatDatabaseHost { Host = "192.168.0.102", Database = "mycatblog2", Username = "root", Password = "19931101" };
-                });
+                .UseMyCat("server=192.168.0.102;port=8066;uid=test;pwd=test;database=blog")
+                .UseDataNode("192.168.0.102", "mycatblog1", "root", "19931101")
+                .UseDataNode("192.168.0.102", "mycatblog2", "root", "19931101");
         }
     }
 
@@ -47,9 +40,11 @@ namespace MyCatSample
         {
             var DB = new SampleContext();
             DB.Database.EnsureCreated();
-            for (var i = 0; i < 1000; i++)
-                DB.Blogs.Add(new Blog { Title = "Hello", Time = DateTime.Now, Content = "shabi" });
+            for (var i = 0; i < 50; i++)
+                DB.Blogs.Add(new Blog { Title = "Hello", Time = DateTime.Now, Content = "MyCat" });
             DB.SaveChanges();
+            Console.WriteLine(DB.Blogs.Count());
+            Console.Read();
         }
     }
 }
