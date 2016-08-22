@@ -53,22 +53,7 @@ namespace Microsoft.EntityFrameworkCore.Storage.Internal
             _rawSqlCommandBuilder = rawSqlCommandBuilder;
             _options = options;
             _schemaGenerator = schemaGenerator;
-            
-            var schema = _schemaGenerator.Schema;
-            var csb = new MyCatConnectionStringBuilder(_connection.ConnectionString);
-            // TODO: Generate schema.xml and send to mycat ef core proxy
-            using (var client = new HttpClient() { BaseAddress = new Uri("http://" + csb.Server + ":7066") })
-            {
-                var task = client.PostAsync("/", new FormUrlEncodedContent(new[]
-                {
-                    new KeyValuePair<string, string>("Username", csb.UserID),
-                    new KeyValuePair<string, string>("Password", csb.Password),
-                    new KeyValuePair<string, string>("Database", csb.Database),
-                    new KeyValuePair<string, string>("DataNodes", Newtonsoft.Json.JsonConvert.SerializeObject(_options.FindExtension<MyCatOptionsExtension>().DataNodes)),
-                    new KeyValuePair<string, string>("Schema", Newtonsoft.Json.JsonConvert.SerializeObject(schema)),
-                }));
-                task.Wait();
-            }
+            _schemaGenerator.CommitSchema(_connection);
         }
 
         public static FieldInfo DbOptions = typeof(DbContext).GetTypeInfo().DeclaredFields.Single(x => x.Name == "_options");

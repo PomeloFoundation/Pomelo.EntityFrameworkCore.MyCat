@@ -36,6 +36,7 @@ namespace Microsoft.EntityFrameworkCore.Migrations.Internal
         private readonly ILogger _logger;
         private readonly string _activeProvider;
         private readonly IDbContextOptions _options;
+        private readonly MyCatSchemaGenerator _schemaCreator;
 
         /// <summary>
         ///     This API supports the Entity Framework Core infrastructure and is not intended to be used 
@@ -52,7 +53,8 @@ namespace Microsoft.EntityFrameworkCore.Migrations.Internal
             [NotNull] ISqlGenerationHelper sqlGenerationHelper,
             [NotNull] ILogger<Migrator> logger,
             [NotNull] IDatabaseProviderServices providerServices,
-            [NotNull] IDbContextOptions options)
+            [NotNull] IDbContextOptions options,
+            [NotNull] MyCatSchemaGenerator schemaCreator)
             : base(migrationsAssembly, historyRepository, databaseCreator, migrationsSqlGenerator, rawSqlCommandBuilder, migrationCommandExecutor, connection, sqlGenerationHelper, logger, providerServices)
         {
             Check.NotNull(migrationsAssembly, nameof(migrationsAssembly));
@@ -77,6 +79,7 @@ namespace Microsoft.EntityFrameworkCore.Migrations.Internal
             _logger = logger;
             _activeProvider = providerServices.InvariantName;
             _options = options;
+            _schemaCreator = schemaCreator;
         }
 
         /// <summary>
@@ -87,6 +90,7 @@ namespace Microsoft.EntityFrameworkCore.Migrations.Internal
         {
             // Get data node connections
             var ext = _options.FindExtension<MyCatOptionsExtension>();
+            _schemaCreator.CommitSchema(_connection);
             foreach (var x in ext.DataNodes)
             {
                 Migrate(x.Master, targetMigration);
@@ -130,9 +134,9 @@ namespace Microsoft.EntityFrameworkCore.Migrations.Internal
             CancellationToken cancellationToken = default(CancellationToken))
         {
             var ext = _options.FindExtension<MyCatOptionsExtension>();
+            _schemaCreator.CommitSchema(_connection);
             foreach (var x in ext.DataNodes)
             {
-                
                 await MigrateAsync(x.Master, targetMigration, cancellationToken);
                 if (x.Slave != null)
                     await MigrateAsync(x.Slave, targetMigration, cancellationToken);

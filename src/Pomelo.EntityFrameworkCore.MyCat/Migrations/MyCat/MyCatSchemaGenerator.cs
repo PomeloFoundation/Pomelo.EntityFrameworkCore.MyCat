@@ -2,6 +2,7 @@
 using System.Collections.Generic;
 using System.ComponentModel.DataAnnotations.Schema;
 using System.Linq;
+using System.Net.Http;
 using System.Threading.Tasks;
 using System.Reflection;
 using Microsoft.EntityFrameworkCore.Infrastructure;
@@ -9,6 +10,8 @@ using Microsoft.EntityFrameworkCore.Metadata;
 using Microsoft.EntityFrameworkCore.Metadata.Internal;
 using Microsoft.EntityFrameworkCore.Internal;
 using Microsoft.EntityFrameworkCore.Storage;
+using Microsoft.EntityFrameworkCore.Storage.Internal;
+using Pomelo.Data.MyCat;
 
 namespace Microsoft.EntityFrameworkCore.Migrations
 {
@@ -107,6 +110,23 @@ namespace Microsoft.EntityFrameworkCore.Migrations
                 dataNodes = tmp.ToArray();
             }
             return dataNodes;
+        }
+
+        public virtual void CommitSchema(MyCatRelationalConnection _connection)
+        {
+            var csb = new MyCatConnectionStringBuilder(_connection.ConnectionString);
+            using (var client = new HttpClient() { BaseAddress = new Uri("http://" + csb.Server + ":7066") })
+            {
+                var task = client.PostAsync("/", new FormUrlEncodedContent(new[]
+                {
+                    new KeyValuePair<string, string>("Username", csb.UserID),
+                    new KeyValuePair<string, string>("Password", csb.Password),
+                    new KeyValuePair<string, string>("Database", csb.Database),
+                    new KeyValuePair<string, string>("DataNodes", Newtonsoft.Json.JsonConvert.SerializeObject(DbContextOptions.FindExtension<MyCatOptionsExtension>().DataNodes)),
+                    new KeyValuePair<string, string>("Schema", Newtonsoft.Json.JsonConvert.SerializeObject(Schema)),
+                }));
+                task.Wait();
+            }
         }
     }
 }
