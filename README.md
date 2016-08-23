@@ -7,6 +7,8 @@ Pomelo.EntityFrameworkCore.MyCat is an Entity Framework Core provider and optimi
 
 ## What is MyCat?
 
+![image](https://cloud.githubusercontent.com/assets/2216750/17903740/251f23fc-699f-11e6-991c-952db05f13a0.png)
+
 [MyCAT](https://github.com/MyCATApache/Mycat-Server) is an Open-Source software, a large database cluster oriented to enterprises. MyCAT is an enforced database which is a replacement for MySQL and supports transaction and ACID. Regarded as MySQL cluster of enterprise database, MyCAT can take the place of expensive Oracle cluster. MyCAT is also a new type of database, which seems like a SQL Server integrated with the memory cache technology, NoSQL technology and HDFS big data. And as a new modern enterprise database product, MyCAT is combined with the traditional database and new distributed data warehouse. In a word, MyCAT is a fresh new middleware of database.
 
 Mycat’s target is to smoothly migrate the current stand-alone database and applications to cloud side with low cost and to solve the bottleneck problem caused by the rapid growth of data storage and business scale.
