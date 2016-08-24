@@ -67,6 +67,8 @@ protected override void OnConfiguring(DbContextOptionsBuilder optionsBuilder)
 
 ⑧ Most of functions which provided in Entity Framework Core were supported. You are able to use .Where(), .Count(), .Sum() ... with `Pomelo.EntityFrameworkCore.MyCat`.
 
+[View the sample on YouTube](https://youtu.be/q0CXfFNtMZo)
+
 ## Contribute
 
 One of the easiest ways to contribute is to participate in discussions and discuss issues. You can also contribute by submitting pull requests with code changes.
