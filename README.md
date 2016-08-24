@@ -41,6 +41,8 @@ Mycat’s target is to smoothly migrate the current stand-alone database and app
 # apt-get install dotnet-dev-1.0.0-preview2-003121
 ```
 
+Ensure `utf8` is the default charset. You can replace the `my.cnf` file by using [this](https://gist.github.com/Kagamine/ccf10486b9854e0ceb14779dfadd3640).
+
 ② Download [Pomelo.EntityFrameworkCore.MyCat.Proxy](https://github.com/PomeloFoundation/Entity-Framework-Core-MyCat-Proxy/releases) and [MyCat Server](https://github.com/MyCATApache/Mycat-download)
 
 ③ Configure the `config.json` which in Pomelo.EntityFrameworkCore.MyCat.Proxy root path, set the `MyCatRootPath`.
