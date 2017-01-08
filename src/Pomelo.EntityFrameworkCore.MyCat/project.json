@@ -1,5 +1,5 @@
 {
-  "version": "1.0.0-*",
+  "version": "1.1.0-*",
 
   "buildOptions": {
     "allowUnsafe": true
@@ -19,7 +19,7 @@
   },
 
   "dependencies": {
-    "Microsoft.EntityFrameworkCore.Relational": "1.0.0",
+    "Microsoft.EntityFrameworkCore.Relational": "1.1.0",
     "Pomelo.Data.MyCat": "1.0.0-*"
   },
 
@@ -53,9 +53,9 @@
     },
     "netstandard1.3": {
       "dependencies": {
-        "System.Threading.Thread": "4.0.0",
-        "System.Reflection.TypeExtensions": "4.1.0",
-        "System.Net.Http": "4.1.0"
+        "System.Threading.Thread": "4.3.0",
+        "System.Reflection.TypeExtensions": "4.3.0",
+        "System.Net.Http": "4.3.0"
       }
     }
   }

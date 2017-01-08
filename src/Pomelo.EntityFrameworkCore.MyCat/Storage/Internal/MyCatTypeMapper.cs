@@ -25,7 +25,7 @@ namespace Microsoft.EntityFrameworkCore.Storage.Internal
     {
         private readonly RelationalTypeMapping _bigint = new RelationalTypeMapping("bigint", typeof(long), DbType.Int64);
         private readonly RelationalTypeMapping _bit = new RelationalTypeMapping("bit", typeof(bool));
-        private readonly MyCatMaxLengthMapping _char = new MyCatMaxLengthMapping("char", typeof(char), DbType.AnsiStringFixedLength);
+        private readonly MyCatMaxLengthMapping _char = new MyCatMaxLengthMapping("char", typeof(string), DbType.AnsiStringFixedLength);
         private readonly RelationalTypeMapping _datetime = new RelationalTypeMapping("datetime", typeof(DateTime), DbType.DateTime);
         private readonly RelationalTypeMapping _datetimeoffset = new RelationalTypeMapping("varchar(255)", typeof(DateTimeOffset), DbType.DateTimeOffset);
         private readonly RelationalTypeMapping _decimal = new RelationalTypeMapping("decimal(18, 2)", typeof(decimal));
@@ -48,7 +48,7 @@ namespace Microsoft.EntityFrameworkCore.Storage.Internal
         private readonly RelationalTypeMapping _varbinarymax = new RelationalTypeMapping("longblob", typeof(byte[]), DbType.Binary);
 
 
-        private readonly RelationalTypeMapping _uniqueidentifier = new RelationalTypeMapping("char(38)", typeof(Guid));
+        private readonly RelationalTypeMapping _uniqueidentifier = new RelationalTypeMapping("char(36)", typeof(Guid));
         private readonly RelationalTypeMapping _time = new RelationalTypeMapping("time(6)", typeof(TimeSpan), DbType.Time);
 
         private readonly ConcurrentDictionary<int, RelationalTypeMapping> _boundedStringMappings = new ConcurrentDictionary<int, RelationalTypeMapping>();
@@ -123,7 +123,7 @@ namespace Microsoft.EntityFrameworkCore.Storage.Internal
 
             ByteArrayMapper
                 = new ByteArrayRelationalTypeMapper(
-                    8000,
+                    767,
                     _varbinarymax,
                     _varbinary767,
                     _varbinary767,
@@ -138,7 +138,7 @@ namespace Microsoft.EntityFrameworkCore.Storage.Internal
 
             StringMapper
                 = new StringRelationalTypeMapper(
-                    8000,
+                    767,
                     _varcharmax,
                     _varchar255,
                     _varchar255,
@@ -150,7 +150,7 @@ namespace Microsoft.EntityFrameworkCore.Storage.Internal
                         size: size,
                         hasNonDefaultUnicode: true,
                         hasNonDefaultSize: true),
-                    8000,
+                    767,
                     _varcharmax,
                     _varchar255,
                     _varchar255,
